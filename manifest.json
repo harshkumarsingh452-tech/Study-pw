@@ -1,1 +1,22 @@
-
+{
+  "short_name": "PW Planner",
+  "name": "Physics Wallah Daily Planner",
+  "icons": [
+    {
+      "src": "./pw-logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./pw-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "display": "standalone"
+}
