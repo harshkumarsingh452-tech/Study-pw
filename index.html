@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Physics Wallah Daily Planner</title>
   
+  <!-- Manifest Link for Home Screen Installation -->
+  <link rel="manifest" href="manifest.json">
+  
   <!-- Firebase SDK v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -287,7 +290,7 @@
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const maxDim = 800; // Resize dimension for speed & low DB payload
+          const maxDim = 800;
 
           if (width > height && width > maxDim) {
             height = Math.round((height * maxDim) / width);
@@ -438,7 +441,6 @@
       row.id = `msg-${id}`;
       row.className = `msg-row ${isMe ? 'outgoing' : 'incoming'}`;
       row.onclick = (e) => {
-        // Prevent delete modal when tapping image directly
         if (e.target.tagName !== 'IMG' && e.target.tagName !== 'AUDIO') {
           openDeleteModal(id, data.sender, data.deletedForEveryone);
         }
