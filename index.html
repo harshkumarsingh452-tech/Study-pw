@@ -70,12 +70,6 @@
     .btn-danger { background: #dc2626 !important; }
     .btn-secondary { background: #374151 !important; }
 
-    /* GIF PICKER MODAL STYLES */
-    #gifModal .modal-box { max-width: 380px; height: 420px; display: flex; flex-direction: column; padding: 12px; background: #111b21; }
-    .gif-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; overflow-y: auto; flex: 1; margin-top: 8px; padding-right: 4px; }
-    .gif-item { width: 100%; height: 110px; object-fit: cover; border-radius: 6px; cursor: pointer; transition: transform 0.1s; }
-    .gif-item:active { transform: scale(0.95); }
-
     /* CAMERA UI */
     #cameraView { width: 100%; max-height: 280px; border-radius: 8px; background: #000; object-fit: cover; }
   </style>
@@ -112,9 +106,10 @@
 
       <div class="input-bar">
         <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+        <input type="file" id="gifInput" accept="image/gif" style="display: none;" onchange="handleGifUpload(event)">
         <button class="icon-btn" onclick="document.getElementById('imageInput').click()" title="Gallery Image">🖼️</button>
         <button class="icon-btn" onclick="openCameraModal()" title="Take Photo">📷</button>
-        <button class="icon-btn" onclick="openGifModal()" title="GIF / Stickers">✨</button>
+        <button class="icon-btn" onclick="document.getElementById('gifInput').click()" title="Send GIF / Sticker">✨</button>
         <input id="chatInput" type="text" placeholder="Type a message..." onkeyup="if(event.key==='Enter') sendMessage()">
         <button id="recordBtn" class="icon-btn" onclick="toggleRecord()" title="Voice Note">🎙️</button>
         <button class="icon-btn" onclick="sendMessage()">➤</button>
@@ -148,20 +143,6 @@
         <canvas id="cameraCanvas" style="display:none;"></canvas>
         <button onclick="captureCameraPhoto()">📸 Capture & Send</button>
         <button class="btn-secondary" onclick="closeCameraModal()">Cancel</button>
-      </div>
-    </div>
-
-    <!-- GIF PICKER MODAL -->
-    <div class="modal" id="gifModal">
-      <div class="modal-box">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h3 style="font-size:15px;">Select GIF / Sticker</h3>
-          <button style="width:auto; padding:2px 8px; margin:0; background:#dc2626;" onclick="closeGifModal()">✕</button>
-        </div>
-        <input type="text" id="gifSearchInput" placeholder="Search GIFs (e.g. funny, fire)..." onkeyup="if(event.key==='Enter') searchGifs()">
-        <div class="gif-grid" id="gifGridContainer">
-          <!-- GIFs will load here -->
-        </div>
       </div>
     </div>
 
@@ -343,74 +324,24 @@
       reader.readAsDataURL(fileOrBlob);
     }
 
-    /* GIF PICKER & TENOR API LOGIC */
-    function openGifModal() {
-      document.getElementById('gifModal').style.display = 'flex';
-      loadTrendingGifs();
-    }
-
-    function closeGifModal() {
-      document.getElementById('gifModal').style.display = 'none';
-    }
-
-    async function loadTrendingGifs() {
-      const container = document.getElementById('gifGridContainer');
-      container.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:20px; font-size:13px; color:#8696a0;">Loading GIFs...</div>';
-      try {
-        // Using public Tenor anonymous API key for fetching GIFs instantly
-        const res = await fetch(`https://g.tenor.com/v1/trending?key=LIVDSRZULELA&limit=20`);
-        const data = await res.json();
-        renderGifGrid(data.results);
-      } catch (e) {
-        container.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:20px; font-size:13px; color:#dc2626;">Failed to load GIFs</div>';
-      }
-    }
-
-    async function searchGifs() {
-      const query = document.getElementById('gifSearchInput').value.trim();
-      const container = document.getElementById('gifGridContainer');
-      if (!query) {
-        loadTrendingGifs();
-        return;
-      }
-      container.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:20px; font-size:13px; color:#8696a0;">Searching...</div>';
-      try {
-        const res = await fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(query)}&key=LIVDSRZULELA&limit=20`);
-        const data = await res.json();
-        renderGifGrid(data.results);
-      } catch (e) {
-        container.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:20px; font-size:13px; color:#dc2626;">Search failed</div>';
-      }
-    }
-
-    function renderGifGrid(results) {
-      const container = document.getElementById('gifGridContainer');
-      container.innerHTML = '';
-      if (!results || results.length === 0) {
-        container.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:20px; font-size:13px; color:#8696a0;">No GIFs found</div>';
-        return;
-      }
-      results.forEach(item => {
-        const gifUrl = item.media[0].tinygif.url;
-        const img = document.createElement('img');
-        img.src = gifUrl;
-        img.className = 'gif-item';
-        img.onclick = () => sendSelectedGif(gifUrl);
-        container.appendChild(img);
-      });
-    }
-
-    function sendSelectedGif(url) {
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-      messagesRef.push({
-        sender: myName,
-        type: "gif",
-        gifUrl: url,
-        time: time,
-        status: "sent",
-        deletedForEveryone: false
-      });
-      closeGifModal();
+    /* GIF & STICKER HANDLING LOGIC */
+    function handleGifUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        messagesRef.push({
+          sender: myName,
+          type: "gif",
+          gifUrl: event.target.result,
+          time: time,
+          status: "sent",
+          deletedForEveryone: false
+        });
+      };
+      reader.readAsDataURL(file);
     }
 
     /* CAMERA HANDLING LOGIC */
@@ -469,4 +400,97 @@
 
     function closeDeleteModal() {
       selectedMsgId = null;
-      selec
+      selectedMsgSender = null;
+      document.getElementById('deleteModal').style.display = 'none';
+    }
+
+    function confirmDeleteEveryone() {
+      if (selectedMsgId) {
+        messagesRef.child(selectedMsgId).update({
+          message: "🚫 This message was deleted",
+          audioUrl: null,
+          imageUrl: null,
+          gifUrl: null,
+          deletedForEveryone: true
+        });
+      }
+      closeDeleteModal();
+    }
+
+    function confirmDeleteForMe() {
+      if (selectedMsgId) {
+        const elem = document.getElementById(`msg-${selectedMsgId}`);
+        if (elem) elem.remove();
+      }
+      closeDeleteModal();
+    }
+
+    /* REALTIME LISTENERS */
+    function listenMessages() {
+      messagesRef.limitToLast(50).on("child_added", (snapshot) => {
+        const data = snapshot.val();
+        const msgId = snapshot.key;
+        renderMessage(msgId, data);
+
+        if (data.sender !== myName) {
+          messagesRef.child(msgId).child("status").set("read");
+        }
+      });
+
+      messagesRef.limitToLast(50).on("child_changed", (snapshot) => {
+        const msgId = snapshot.key;
+        const data = snapshot.val();
+        
+        const tickElem = document.getElementById(`tick-${msgId}`);
+        if (tickElem && data.status === "read") {
+          tickElem.textContent = "✓✓";
+          tickElem.classList.add("read");
+        }
+
+        if (data.deletedForEveryone) {
+          const contentElem = document.getElementById(`content-${msgId}`);
+          if (contentElem) {
+            contentElem.innerHTML = "🚫 This message was deleted";
+            contentElem.className = "deleted-msg";
+          }
+        }
+      });
+    }
+
+    function renderMessage(id, data) {
+      const container = document.getElementById('messageContainer');
+      const isMe = data.sender === myName;
+      const row = document.createElement("div");
+      row.id = `msg-${id}`;
+      row.className = `msg-row ${isMe ? 'outgoing' : 'incoming'}`;
+      row.onclick = (e) => {
+        if (e.target.tagName !== 'IMG' && e.target.tagName !== 'AUDIO' && e.target.tagName !== 'VIDEO') {
+          openDeleteModal(id, data.sender, data.deletedForEveryone);
+        }
+      };
+
+      let tickHtml = "";
+      if (isMe) {
+        const isRead = data.status === "read";
+        tickHtml = `<span class="tick ${isRead ? 'read' : ''}" id="tick-${id}">${isRead ? '✓✓' : '✓'}</span>`;
+      }
+
+      let contentHtml = "";
+      if (data.deletedForEveryone) {
+        contentHtml = `<span id="content-${id}" class="deleted-msg">🚫 This message was deleted</span>`;
+      } else if (data.type === "image") {
+        contentHtml = `
+          <div id="content-${id}">
+            <img src="${data.imageUrl}" class="chat-img" onclick="openFullImage('${data.imageUrl}')">
+          </div>`;
+      } else if (data.type === "gif") {
+        contentHtml = `
+          <div id="content-${id}">
+            <img src="${data.gifUrl}" class="chat-gif">
+          </div>`;
+      } else if (data.type === "audio") {
+        contentHtml = `
+          <div id="content-${id}">
+            <div style="font-size:11px; opacity:0.8; margin-bottom:2px;">🎤 Voice Message</div>
+            <audio controls src="${data.audioUrl}"></audio>
+  
