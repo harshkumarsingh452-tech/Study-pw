@@ -60,7 +60,6 @@
 
     audio { width: 200px; height: 30px; margin-top: 4px; outline: none; }
     .chat-img { max-width: 100%; max-height: 220px; border-radius: 6px; margin-top: 4px; object-fit: cover; }
-    .chat-gif { max-width: 100%; max-height: 200px; border-radius: 6px; margin-top: 4px; object-fit: contain; background: #000; }
 
     /* MODALS */
     .modal { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
@@ -106,10 +105,8 @@
 
       <div class="input-bar">
         <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
-        <input type="file" id="gifInput" accept="image/gif" style="display: none;" onchange="handleGifUpload(event)">
         <button class="icon-btn" onclick="document.getElementById('imageInput').click()" title="Gallery Image">🖼️</button>
         <button class="icon-btn" onclick="openCameraModal()" title="Take Photo">📷</button>
-        <button class="icon-btn" onclick="document.getElementById('gifInput').click()" title="Send GIF / Sticker">✨</button>
         <input id="chatInput" type="text" placeholder="Type a message..." onkeyup="if(event.key==='Enter') sendMessage()">
         <button id="recordBtn" class="icon-btn" onclick="toggleRecord()" title="Voice Note">🎙️</button>
         <button class="icon-btn" onclick="sendMessage()">➤</button>
@@ -171,6 +168,7 @@
     let selectedMsgId = null;
     let selectedMsgSender = null;
 
+    // VOICE & CAMERA VARIABLES
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecording = false;
@@ -324,26 +322,6 @@
       reader.readAsDataURL(fileOrBlob);
     }
 
-    /* GIF & STICKER HANDLING LOGIC */
-    function handleGifUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-        messagesRef.push({
-          sender: myName,
-          type: "gif",
-          gifUrl: event.target.result,
-          time: time,
-          status: "sent",
-          deletedForEveryone: false
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-
     /* CAMERA HANDLING LOGIC */
     async function openCameraModal() {
       try {
@@ -410,7 +388,6 @@
           message: "🚫 This message was deleted",
           audioUrl: null,
           imageUrl: null,
-          gifUrl: null,
           deletedForEveryone: true
         });
       }
@@ -464,7 +441,7 @@
       row.id = `msg-${id}`;
       row.className = `msg-row ${isMe ? 'outgoing' : 'incoming'}`;
       row.onclick = (e) => {
-        if (e.target.tagName !== 'IMG' && e.target.tagName !== 'AUDIO' && e.target.tagName !== 'VIDEO') {
+        if (e.target.tagName !== 'IMG' && e.target.tagName !== 'AUDIO') {
           openDeleteModal(id, data.sender, data.deletedForEveryone);
         }
       };
@@ -483,14 +460,35 @@
           <div id="content-${id}">
             <img src="${data.imageUrl}" class="chat-img" onclick="openFullImage('${data.imageUrl}')">
           </div>`;
-      } else if (data.type === "gif") {
-        contentHtml = `
-          <div id="content-${id}">
-            <img src="${data.gifUrl}" class="chat-gif">
-          </div>`;
       } else if (data.type === "audio") {
         contentHtml = `
           <div id="content-${id}">
             <div style="font-size:11px; opacity:0.8; margin-bottom:2px;">🎤 Voice Message</div>
             <audio controls src="${data.audioUrl}"></audio>
-  
+          </div>`;
+      } else {
+        contentHtml = `<span id="content-${id}">${escapeHtml(data.message)}</span>`;
+      }
+
+      const senderHeader = !isMe ? `<span class="sender-name">${escapeHtml(data.sender || 'User')}</span>` : '';
+
+      row.innerHTML = `
+        <div class="msg-bubble">
+          ${senderHeader}
+          ${contentHtml}
+          <div class="msg-meta">
+            <span>${data.time || ''}</span>
+            ${tickHtml}
+          </div>
+        </div>
+      `;
+
+      container.appendChild(row);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function openPW() { window.open("https://www.youtube.com/@PhysicsWallah", "_blank"); }
+    function escapeHtml(text) { return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ""; }
+  </script>
+</body>
+</html>
